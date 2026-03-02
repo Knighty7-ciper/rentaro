@@ -14,7 +14,7 @@ function getSupabaseClient() {
   return createClient(url, anonKey)
 }
 
-// Update the signIn function to handle redirects properly
+// Updated signIn function with email verification check
 export async function signIn(prevState: any, formData: FormData) {
   // Check if formData is valid
   if (!formData) {
@@ -31,7 +31,9 @@ export async function signIn(prevState: any, formData: FormData) {
 
   try {
     const supabase = getSupabaseClient()
-    const { error } = await supabase.auth.signInWithPassword({
+    
+    // First, sign in with password
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
     })
@@ -40,7 +42,14 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    // Return success instead of redirecting directly
+    // Check if user's email is verified
+    if (data.user && !data.user.email_confirmed_at) {
+      // Email not verified - sign them back out
+      await supabase.auth.signOut()
+      return { error: "Please verify your email before signing in. Check your inbox for the verification link." }
+    }
+
+    // Return success if email is verified
     return { success: true }
   } catch (error) {
     console.error("Login error:", error)
@@ -48,7 +57,7 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 }
 
-// Update the signUp function to handle potential null formData
+// Updated signUp function with proper email verification requirement
 export async function signUp(prevState: any, formData: FormData) {
   // Check if formData is valid
   if (!formData) {
@@ -69,9 +78,12 @@ export async function signUp(prevState: any, formData: FormData) {
       email: email.toString(),
       password: password.toString(),
       options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
+        // Redirect to callback route to handle email verification
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+        // Require email confirmation before user can login
+        data: {
+          email_verified: false,
+        }
       },
     })
 
@@ -79,7 +91,8 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: "Check your email to confirm your account." }
+    // Don't auto-login - require email verification first
+    return { success: true, message: "Check your email to verify your account before signing in." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }

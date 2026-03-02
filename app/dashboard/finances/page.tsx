@@ -52,15 +52,6 @@ export default function FinancesPage() {
 
     fetchFinancialData()
   }, [])
-  const { data: expenses } = await supabase
-    .from("expenses")
-    .select(`
-      *,
-      properties (name)
-    `)
-    .gte("expense_date", firstDayOfMonth.toISOString())
-    .lte("expense_date", lastDayOfMonth.toISOString())
-    .order("expense_date", { ascending: false })
 
   // Calculate totals
   const totalRentDue = rentPayments?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0

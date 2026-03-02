@@ -32,14 +32,6 @@ export default function SignUpForm() {
   const [state, formAction] = useActionState(signUp, null)
   const router = useRouter()
 
-  useEffect(() => {
-    if (state?.success) {
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000)
-    }
-  }, [state?.success, router])
-
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
@@ -56,7 +48,7 @@ export default function SignUpForm() {
 
           {state?.success && (
             <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-md text-sm">
-              Account created! Redirecting to dashboard...
+              {state.message || "Account created! Check your email to verify your account before signing in."}
             </div>
           )}
 
